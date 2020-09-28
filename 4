@@ -1,0 +1,40 @@
+real L=1.2;
+real D=0.3;
+real r=0.15;
+real Lx=0.6;
+real Ly=0.9;
+real k=0.5;
+real Cp=920;
+real rho=2400;
+real T0=310,dt=1000,alpha=0;
+real Q=k/(rho*Cp);
+real Tupp=310;
+real Tcercle=400;
+real RF=1;
+border c1(t=0,1) {x=r+t*(Lx-r);y=0;label=1;}
+border c2(t=0,1) {x=Lx ;y=t*Ly;label=2;}
+border c3(t=1,0) {x=t*Lx ;y=Ly;label=3;}
+border c4(t=1,0) {x=0; y=r+t*(Ly-r);label=4;}
+border c5(t=pi/2,0) {x=r*cos(t) ;y=r*sin(t);label=5;}
+//MESHING
+mesh Th=buildmesh (c1(10*RF)+c2(20*RF)+c3(15*RF)+c4(18*RF)+c5(10*RF));
+plot(Th,ps="mesh1.png");
+real error=1.0,epsilon=0.0001,Ts;
+int j;
+fespace Vh(Th,P1);
+Vh T=T0,v,Told,qtop,qcyl;
+problem thermic(T,v)=int2d(Th)(T*v/dt+Q*(dx(T)*dx(v)+dy(T)*dy(v)))
+   -int2d(Th)(Told*v/dt)+on(3,T=Tupp)+on(5,T=Tcercle);
+
+while (error>epsilon) {
+j=j+1;
+qtop=int1d(Th,3)((-k)*dx(T)*N.x-k*dy(T)*N.y);
+qcyl=int1d(Th,5)((-k)*dx(T)*N.x-k*dy(T)*N.y);
+error=abs((qtop+qcyl)/qcyl);
+Told=T;
+thermic;
+
+cout<<"time"<<dt*j<<"\n";
+cout<<"error"<<error<<"\n";
+}
+cout<<"time ts "<<dt*j<<"\n";
